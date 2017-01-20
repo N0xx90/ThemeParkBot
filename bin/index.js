@@ -56,9 +56,9 @@ bot.command('fav', (ctx) => {
 var usage = function(ctx){
 	return ctx.reply("Utilisation :\n"+
 	"**** Requete ****\n"+
-	"/parc\n"+
-	"/parc <NomDuParc>\n"+
-	"Exemple : /parc DisneylandParisMagicKingdom\n" +
+	"/park\n"+
+	"/park <NomDuParc>\n"+
+	"Exemple : /park DisneylandParisMagicKingdom\n" +
 	"**** Attractions fermées ****\n"+
 	"/closed\n"+
 	"/closed <NomDuParc>\n"+
@@ -68,7 +68,7 @@ var usage = function(ctx){
 	"/fav <add/del> <NomDuParc>\n"+
 	"Exemple : /fav add DisneylandParisMagicKingdom\n" +
 	"/help pour l'aide" 
-	, Markup.keyboard(['/park']).oneTime().resize().extra());
+	, Markup.keyboard(['/park', '/closed', '/fav']).oneTime().resize().extra());
 }
 
 
