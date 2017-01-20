@@ -1,4 +1,4 @@
-var Themeparks = require("themeparks"),
+var Themeparks = require("themeparks");
 fs = require('fs'),
 promise = require('promise'),
 Telegraf = require('telegraf'),
@@ -10,14 +10,16 @@ memorySession = require('telegraf').memorySession;
 const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.use(memorySession())
 
-var cmdArray = ['/help', '/park', '/fav'];
+var cmdArray = ['/help', '/park', '/fav', '/closed'];
 
 bot.use((ctx, next) => {
-	let cmd = ctx.message.text.split(' ')[0];
-	if (in_array(cmd, cmdArray)){
-		return next();
-	} else {
-		return usage(ctx);
+	if (ctx.message != undefined){
+		let cmd = ctx.message.text.split(' ')[0];
+		if (in_array(cmd, cmdArray)){
+			return next();
+		} else {
+			return usage(ctx);
+		}
 	}
 
 })
@@ -29,6 +31,10 @@ bot.command('help', (ctx) => {
 
 bot.command('park', (ctx) => {
 	requestAPI(ctx).then(function(data){ return data; },function(error){ return error; });
+	
+})
+bot.command('closed', (ctx) => {
+	requestAPI(ctx, true).then(function(data){ return data; },function(error){ return error; });
 	
 })
 bot.command('fav', (ctx) => {
@@ -52,24 +58,36 @@ var usage = function(ctx){
 	"**** Requete ****\n"+
 	"/parc\n"+
 	"/parc <NomDuParc>\n"+
-	"Exemple : /parc AsterixPark\n" +
+	"Exemple : /parc DisneylandParisMagicKingdom\n" +
+	"**** Attractions fermées ****\n"+
+	"/closed\n"+
+	"/closed <NomDuParc>\n"+
+	"Exemple : /closed DisneylandParisMagicKingdom\n" +
 	"**** Favoris ****\n"+
 	"/fav list\n"+
 	"/fav <add/del> <NomDuParc>\n"+
-	"Exemple : /fav add AsterixPark\n" +
+	"Exemple : /fav add DisneylandParisMagicKingdom\n" +
 	"/help pour l'aide" 
 	, Markup.keyboard(['/park']).oneTime().resize().extra());
 }
 
 
-var requestAPI = function(ctx, typeLine){
+var requestAPI = function(ctx, closed){
 	return new Promise(		
 		function(resolve, reject){
 			try {
 				var text = ctx.message.text;
 				var data = text.split(' ');
 				if (data.length == 1) {
-					resolve(ctx.reply('Parcs ', Markup.keyboard(parkArray).oneTime().resize().extra()));
+					if (closed == undefined){
+						resolve(ctx.reply('Parcs ', Markup.keyboard(parkArray).oneTime().resize().extra()));
+					} else {
+						resStr = [];
+						parkArray.forEach(function(item){
+							resStr.push(item.replace(/\/park/g, '/closed'));
+						})
+						resolve(ctx.reply('Parcs ', Markup.keyboard(resStr).oneTime().resize().extra()));
+					}
 				}
 				if(data.length >= 2){
 					// access a specific park
@@ -79,11 +97,23 @@ var requestAPI = function(ctx, typeLine){
 							found = true;
 							var parc = new Themeparks.Parks[park]();
 							parc.GetWaitTimes().then(function(rides) {
-								var strWait = []
-								for(var i=0, ride; ride=rides[i++];) {
-									strWait.push(ride.name + ": " + ride.waitTime + " minutes wait")
+								var res = [];
+								if (closed == undefined){
+									for(var i=0, ride; ride=rides[i++];) {
+										if(ride.active == true){
+											res.push(ride.name + ": " + ride.waitTime + " minutes d'attente")
+										}
+									}
+								} else {
+									res.push('Liste des attractions fermées : ');
+									for(var i=0, ride; ride=rides[i++];) {
+										if(ride.active == false){
+											res.push('- ' + ride.name)
+										}
+									}
+									
 								}
-								resolve(ctx.reply(strWait.join('\n')));
+								resolve(ctx.reply(res.join('\n')));
 
 							}, console.error);
 						} 
